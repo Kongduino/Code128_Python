@@ -11,3 +11,5 @@ img.show()
 ```
 
 ![Kongduino128](Kongduino128.png)
+
+*Yes, I know I should make a class out of this code. But it's a simple demo. YOU do it.*

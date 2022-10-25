@@ -1,5 +1,18 @@
-import re
-from PIL import Image, ImageDraw
+import re, board
+import displayio
+from adafruit_ili9341 import ILI9341
+from adafruit_display_shapes.rect import Rect
+from adafruit_display_shapes.line import Line
+from adafruit_display_text import label
+import terminalio
+
+displayio.release_displays()
+spi = board.SPI()
+tft_cs = board.D11
+tft_dc = board.D9
+tft_rst = board.D10
+display_bus = displayio.FourWire(spi, command=tft_dc, chip_select=tft_cs)
+display = ILI9341(display_bus, width=320, height=240, rotation=180)
 
 PATTERNS = [[2, 1, 2, 2, 2, 2], [2, 2, 2, 1, 2, 2], [2, 2, 2, 2, 2, 1], [1, 2, 1, 2, 2, 3], [1, 2, 1, 3, 2, 2], [1, 3, 1, 2, 2, 2], [1, 2, 2, 2, 1, 3], [1, 2, 2, 3, 1, 2], [1, 3, 2, 2, 1, 2], [2, 2, 1, 2, 1, 3], [2, 2, 1, 3, 1, 2], [2, 3, 1, 2, 1, 2], [1, 1, 2, 2, 3, 2], [1, 2, 2, 1, 3, 2], [1, 2, 2, 2, 3, 1], [1, 1, 3, 2, 2, 2], [1, 2, 3, 1, 2, 2], [1, 2, 3, 2, 2, 1], [2, 2, 3, 2, 1, 1], [2, 2, 1, 1, 3, 2], [2, 2, 1, 2, 3, 1], [2, 1, 3, 2, 1, 2], [2, 2, 3, 1, 1, 2], [3, 1, 2, 1, 3, 1], [3, 1, 1, 2, 2, 2], [3, 2, 1, 1, 2, 2], [3, 2, 1, 2, 2, 1], [3, 1, 2, 2, 1, 2], [3, 2, 2, 1, 1, 2], [3, 2, 2, 2, 1, 1], [2, 1, 2, 1, 2, 3], [2, 1, 2, 3, 2, 1], [2, 3, 2, 1, 2, 1], [1, 1, 1, 3, 2, 3], [1, 3, 1, 1, 2, 3], [1, 3, 1, 3, 2, 1], [1, 1, 2, 3, 1, 3], [1, 3, 2, 1, 1, 3], [1, 3, 2, 3, 1, 1], [2, 1, 1, 3, 1, 3], [2, 3, 1, 1, 1, 3], [2, 3, 1, 3, 1, 1], [1, 1, 2, 1, 3, 3], [1, 1, 2, 3, 3, 1], [1, 3, 2, 1, 3, 1], [1, 1, 3, 1, 2, 3], [1, 1, 3, 3, 2, 1], [1, 3, 3, 1, 2, 1], [3, 1, 3, 1, 2, 1], [2, 1, 1, 3, 3, 1], [2, 3, 1, 1, 3, 1], [2, 1, 3, 1, 1, 3], [2, 1, 3, 3, 1, 1], [2, 1, 3, 1, 3, 1], [3, 1, 1, 1, 2, 3], [3, 1, 1, 3, 2, 1], [3, 3, 1, 1, 2, 1], [3, 1, 2, 1, 1, 3], [3, 1, 2, 3, 1, 1], [3, 3, 2, 1, 1, 1], [3, 1, 4, 1, 1, 1], [2, 2, 1, 4, 1, 1], [4, 3, 1, 1, 1, 1], [1, 1, 1, 2, 2, 4], [1, 1, 1, 4, 2, 2], [1, 2, 1, 1, 2, 4], [1, 2, 1, 4, 2, 1], [1, 4, 1, 1, 2, 2], [1, 4, 1, 2, 2, 1], [1, 1, 2, 2, 1, 4], [1, 1, 2, 4, 1, 2], [1, 2, 2, 1, 1, 4], [1, 2, 2, 4, 1, 1], [1, 4, 2, 1, 1, 2], [1, 4, 2, 2, 1, 1], [2, 4, 1, 2, 1, 1], [2, 2, 1, 1, 1, 4], [4, 1, 3, 1, 1, 1], [2, 4, 1, 1, 1, 2], [1, 3, 4, 1, 1, 1], [1, 1, 1, 2, 4, 2], [1, 2, 1, 1, 4, 2], [1, 2, 1, 2, 4, 1], [1, 1, 4, 2, 1, 2], [1, 2, 4, 1, 1, 2], [1, 2, 4, 2, 1, 1], [4, 1, 1, 2, 1, 2], [4, 2, 1, 1, 1, 2], [4, 2, 1, 2, 1, 1], [2, 1, 2, 1, 4, 1], [2, 1, 4, 1, 2, 1], [4, 1, 2, 1, 2, 1], [1, 1, 1, 1, 4, 3], [1, 1, 1, 3, 4, 1], [1, 3, 1, 1, 4, 1], [1, 1, 4, 1, 1, 3], [1, 1, 4, 3, 1, 1], [4, 1, 1, 1, 1, 3], [4, 1, 1, 3, 1, 1], [1, 1, 3, 1, 4, 1], [1, 1, 4, 1, 3, 1], [3, 1, 1, 1, 4, 1], [4, 1, 1, 1, 3, 1], [2, 1, 1, 4, 1, 2], [2, 1, 1, 2, 1, 4], [2, 1, 1, 2, 3, 2], [2, 3, 3, 1, 1, 1, 2]]
 START_BASE = 38
@@ -56,38 +69,49 @@ def code128FromType(barcodeType, code):
   if barcodeType == 'C':
     return charCode
 
-def newCode128(code, barHeight, thickness = 3, barcodeType=None):
+def newCode128(group, code, barHeight, thickness = 3, px = 0, py = 0, barcodeType=None):
   if barcodeType == None:
     barcodeType = code128Detect(code)
   if (barcodeType=='C' and len(code) % 2 == 1):
     code = '0' + code
   c = code128ParseBarcode(code, barcodeType)
   wx = thickness
-  st = wx*10
-  top = st
+  left = wx*10 + px
+  st = left
+  top = 0
+  if py > 0:
+    top = py
+  else:
+    top = st + py
   ss = sum(map(sum, c))
-  
   w = ss * wx + (st*2)
   h = barHeight + (st*2)
-  shape = [(0, 0), (w - 1, h - 1)]
-  img = Image.new("RGB", (w, h))
-  img1 = ImageDraw.Draw(img)  
-  img1.rectangle(shape, fill ="#ffffff")
-  for pk in c:
+  print(f"w = {w}, h = {h}, st = {st}, wx = {wx}")
+  print(c)
+  for ptns in c:
     clrIX = 0
-    for ptns in pk:
+    for pk in ptns:
       if clrIX == 0:
         # Only draw the rectangle if it's black
-        shape = [(st, top), (st + (wx*ptns) -1, (top+barHeight-1))]
-        img1.rectangle(shape, fill = "#000000")
+        rect = Rect(st, top, pk*wx, barHeight, fill=0x000000)
+        #print(f"Rect({st}, {top}, {pk*wx}, {barHeight}, fill=BLACK)")
+        group.append(rect)
         clrIX = 1
       else:
+        #print(f"Rect({st}, {top}, {pk*wx}, {barHeight}, fill=WHITE)")
         clrIX = 0
-      st += (wx*ptns)
-  print(c)
-  return img
+      st += (wx*pk)
+  my_label = label.Label(terminalio.FONT, text=code, color=0x000000)
+  my_label.x = int(st/2) - int(my_label.width/2)
+  my_label.y = top + barHeight + 10
+  group.append(my_label)
+  display.show(group)
 
 if __name__ == "__main__":
-  myText = "ABCD"
-  img = newCode128(myText, 60, 2)
-  img.show()
+  my_group = displayio.Group()
+  rect = Rect(0, 0, 320, 240, fill=0xFFFFFF)
+  my_group.append(rect)
+  myText = "Code128"
+  newCode128(my_group, myText, 60, 2)
+  myText = "Kongduino"
+  newCode128(my_group, myText, 60, 2, 0, 120)

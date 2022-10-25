@@ -13,3 +13,21 @@ img.show()
 ![Kongduino128](Kongduino128.png)
 
 *Yes, I know I should make a class out of this code. But it's a simple demo. YOU do it.*
+
+## CircuitPython
+
+Included is a CircuitPython working on my 01Studio Board (nRF52840) with displayio.
+
+```python
+if __name__ == "__main__":
+  my_group = displayio.Group()
+  rect = Rect(0, 0, 320, 240, fill=0xFFFFFF)
+  my_group.append(rect)
+  myText = "Code128"
+  newCode128(my_group, myText, 60, 2)
+  myText = "Kongduino"
+  newCode128(my_group, myText, 60, 2, 0, 120)
+  # bar height, bar thickness, px, py
+```
+
+![TwoBarcodes](TwoBarcodes.jpg)
